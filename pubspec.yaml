@@ -25,14 +25,17 @@ dependencies:
     sdk: flutter
 
   wakelock: any
-  audioplayers: ^0.7.8
+  audioplayers: ^0.15.1
   sqflite: any
 
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.0
-#  google_mobile_ads: ^0.12.2+1
+  google_mobile_ads: ^0.11.0
+  provider: ^4.3.3
+
+#  google_mobile_ads: any
 
 dev_dependencies:
   flutter_test:

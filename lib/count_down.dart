@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
-// import 'package:google_mobile_ads/google_mobile_ads.dart';
-// import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:provider/provider.dart';
 import 'package:wakelock/wakelock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audio_cache.dart';
 
+import 'ad_state.dart';
 import 'database.dart';
 import 'main.dart';
 class CountDownPage extends StatefulWidget {
@@ -30,11 +31,12 @@ class _CountDownPageState extends State<CountDownPage> {
   Duration _duration = new Duration();
   Duration _position = new Duration();
   AudioPlayer audioPlayer ;
-  AudioCache audioCache;
+  AudioCache audioCache ;
   bool isActive = false;
   bool isMute = false;
   bool isStop = false;
   Map map ;
+  BannerAd banner;
   // BannerAd _bannerAd;
   // final Completer<BannerAd> bannerCompleter = Completer<BannerAd>();
 
@@ -45,26 +47,6 @@ class _CountDownPageState extends State<CountDownPage> {
     time = widget.second;
     initDb();
     initPlayer();
-    // _bannerAd = BannerAd(
-    //   adUnitId: "ca-app-pub-5065042543576800/7833437920",
-    //   request: AdRequest(),
-    //   size: AdSize.banner,
-    //   listener: AdListener(
-    //     onAdLoaded: (Ad ad) {
-    //       print('$BannerAd loaded.');
-    //       bannerCompleter.complete(ad as BannerAd);
-    //     },
-    //     onAdFailedToLoad: (Ad ad, LoadAdError error) {
-    //       ad.dispose();
-    //       print('$BannerAd failedToLoad: $error');
-    //       bannerCompleter.completeError(error);
-    //     },
-    //     onAdOpened: (Ad ad) => print('$BannerAd onAdOpened.'),
-    //     onAdClosed: (Ad ad) => print('$BannerAd onAdClosed.'),
-    //     onApplicationExit: (Ad ad) => print('$BannerAd onApplicationExit.'),
-    //   ),
-    // );
-    // Future<void>.delayed(Duration(seconds: 1), () => _bannerAd.load());
   }
 
   Future<void> initDb() async {
@@ -141,25 +123,42 @@ class _CountDownPageState extends State<CountDownPage> {
   }
 
   Widget _buildBody() {
-    return Stack(
-      children: <Widget>[
-        Center(
-            child: _getTimes()
+    return Column(
+      children: [
+        Expanded(
+          flex: 8,
+            child: Center(
+                child: _getTimes()
+            ),
         ),
-        //Text(this.map["desc"], style: TextStyle(color: Colors.black26),),
-        Positioned(
-          bottom: 8,
-          width: MediaQuery.of(context).size.width,
-          child: Text(this.map["desc"]??"",
+        Expanded(
+            flex: 1,
+            child: Text(this.map["desc"]??"",
             softWrap: true,
             style: TextStyle(color: Colors.black26), ),
         ),
-        // Positioned(
-        //     bottom: 0,
-        //     left: 0,
-        //     child: buildBanner())
+        Expanded(
+            flex: 1,
+            child: buildBanner()
+        ),
       ],
     );
+  }
+
+  @override
+  void didChangeDependencies(){
+    super.didChangeDependencies();
+    final adState = Provider.of<AdState>(context);
+    adState.initialization.then((state) {
+      setState(() {
+        banner = BannerAd(
+            adUnitId: adState.bannerAdUnitId,
+            size: AdSize.banner,
+            request: AdRequest(),
+            listener: adState.adListener
+        )..load();
+      });
+    });
   }
 
 
@@ -219,39 +218,20 @@ class _CountDownPageState extends State<CountDownPage> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
+
+    banner.dispose();
     super.dispose();
     Wakelock.disable();
     audioPlayer.stop();
   }
 
-  // Widget buildBanner() {
-  //   return FutureBuilder<BannerAd>(
-  //     future: bannerCompleter.future,
-  //     builder: (BuildContext context, AsyncSnapshot<BannerAd> snapshot) {
-  //       Widget child;
-  //
-  //       switch (snapshot.connectionState) {
-  //         case ConnectionState.none:
-  //         case ConnectionState.waiting:
-  //         case ConnectionState.active:
-  //           child = Container();
-  //           break;
-  //         case ConnectionState.done:
-  //           if (snapshot.hasData) {
-  //             child = AdWidget(ad: _bannerAd);
-  //           } else {
-  //             child = Text('Error loading $BannerAd');
-  //           }
-  //       }
-  //
-  //       return Container(
-  //         width: _bannerAd.size.width.toDouble(),
-  //         height: _bannerAd.size.height.toDouble(),
-  //         color: Colors.blueGrey,
-  //         child: child,
-  //       );
-  //     },
-  //   );
-  // }
+  Widget buildBanner() {
+    if(banner == null)
+      return SizedBox(height: 50,);
+    else
+      return Container(
+        height: 50,
+        child: AdWidget(ad: banner,),
+      );
+  }
 }
